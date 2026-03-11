@@ -1,6 +1,5 @@
 import type { CliOptions, TimeRange } from '../types/index.js';
 
-/** 时间预设格式: 7d / 1m / 3m / 6m / 1y / all */
 const PERIOD_REGEX = /^(\d+)(d|m|y)$/;
 
 /**
@@ -70,4 +69,30 @@ export function resolveTimeRange(opts: CliOptions): TimeRange | null {
   }
 
   return parsePeriod(opts.period);
+}
+
+/**
+ * 根据当前时间范围和 --compare 参数计算对比时间段
+ * 返回与当前范围等长的前一段时间
+ */
+export function calculateCompareRange(
+  currentRange: TimeRange,
+  comparePeriod?: string
+): TimeRange {
+  if (comparePeriod && comparePeriod !== 'previous') {
+    const parsed = parsePeriod(comparePeriod);
+    if (parsed) {
+      const duration = parsed.to.getTime() - parsed.from.getTime();
+      return {
+        from: new Date(parsed.from.getTime() - duration),
+        to: parsed.from,
+      };
+    }
+  }
+
+  const duration = currentRange.to.getTime() - currentRange.from.getTime();
+  return {
+    from: new Date(currentRange.from.getTime() - duration),
+    to: new Date(currentRange.from.getTime()),
+  };
 }
