@@ -1,6 +1,6 @@
 {
   "name": "commit-report",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Git 提交统计工具，生成可视化 HTML 报告",
   "type": "module",
   "bin": {
