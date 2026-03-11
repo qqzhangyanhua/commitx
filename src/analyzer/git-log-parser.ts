@@ -145,7 +145,7 @@ function parseOutput(
 /**
  * 读取仓库的 .gitignore 规则
  */
-async function loadGitignore(repoPath: string): ReturnType<typeof ig> {
+async function loadGitignore(repoPath: string): Promise<ReturnType<typeof ig>> {
   const ignoreInstance = ig();
 
   try {

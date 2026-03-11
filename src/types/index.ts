@@ -250,6 +250,9 @@ export interface CliOptions {
   alias?: string;
 }
 
+/** CLI 原始参数 */
+export type CliRawOptions = Partial<Record<keyof CliOptions, unknown>>;
+
 /** 时间范围 */
 export interface TimeRange {
   from: Date;
@@ -299,6 +302,8 @@ export interface ReportOptions {
   quiet: boolean;
   templatePath?: string;
   compare?: CompareResult;
+  baseline?: BaselineSummary;
+  insights?: InsightItem[];
 }
 
 /** 对比结果中的 delta 维度 */
@@ -323,7 +328,7 @@ export interface CompareResult {
 
 /** 传递给 HTML 模板的完整数据 */
 export interface ReportData {
-  stats: CommitStats;
+  stats: Record<string, unknown>;
   generatedAt: string;
   timeRange: {
     from: string;
@@ -331,6 +336,82 @@ export interface ReportData {
   } | null;
   repos: string[];
   compare?: CompareResult;
+  baseline?: BaselineSummary;
+  insights?: InsightItem[];
+}
+
+// ============================================================
+// 历史快照与洞察类型
+// ============================================================
+
+/** 快照指标键 */
+export type SnapshotMetricKey =
+  | 'totalCommits'
+  | 'linesAdded'
+  | 'linesDeleted'
+  | 'activeAuthors'
+  | 'filesChanged'
+  | 'aiPercentage'
+  | 'busFactor'
+  | 'stabilityScore'
+  | 'pressureScore'
+  | 'highRiskFiles'
+  | 'staleBranches';
+
+/** 历史快照中的聚合指标 */
+export interface SnapshotMetrics {
+  totalCommits: number;
+  linesAdded: number;
+  linesDeleted: number;
+  activeAuthors: number;
+  filesChanged: number;
+  aiPercentage?: number;
+  busFactor?: number;
+  stabilityScore?: number;
+  pressureScore?: number;
+  highRiskFiles?: number;
+  staleBranches?: number;
+}
+
+/** 历史快照 */
+export interface HistorySnapshot {
+  schemaVersion: number;
+  repoKey: string;
+  repoNames: string[];
+  generatedAt: string;
+  range: {
+    from?: string;
+    to?: string;
+    period?: string;
+  };
+  metrics: SnapshotMetrics;
+}
+
+/** 单项趋势基线 */
+export interface MetricBaseline {
+  metric: SnapshotMetricKey;
+  current: number;
+  previous?: number;
+  average?: number;
+  changePercentage?: number;
+  trend: 'up' | 'down' | 'flat' | 'insufficient';
+}
+
+/** 周/月趋势基线汇总 */
+export interface BaselineSummary {
+  weekly: MetricBaseline[];
+  monthly: MetricBaseline[];
+}
+
+/** 首页异常摘要 */
+export interface InsightItem {
+  id: string;
+  category: 'activity' | 'ai' | 'stability' | 'team' | 'branch' | 'debt';
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  evidence: string;
+  impact: string;
+  suggestion: string;
 }
 
 // ============================================================

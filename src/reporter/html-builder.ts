@@ -24,6 +24,8 @@ export async function buildHtml(
       : null,
     repos: options.repoNames,
     compare: options.compare,
+    baseline: options.baseline,
+    insights: options.insights,
   };
 
   const jsonData = JSON.stringify(reportData)

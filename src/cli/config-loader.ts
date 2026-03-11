@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
-import type { ConfigFile } from '../types/index.js';
+import type { CliRawOptions, ConfigFile } from '../types/index.js';
 
 const CONFIG_FILENAMES = [
   '.commit-reportrc.json',
@@ -39,14 +39,15 @@ export async function loadConfig(
  * 将配置文件值与 CLI 参数合并。CLI 参数优先。
  * 只有用户未通过 CLI 显式传入的值才从配置文件中取。
  */
-export function mergeConfigWithOpts<T extends Record<string, unknown>>(
+export function mergeConfigWithOpts<T extends object>(
   opts: T,
   config: ConfigFile | null,
-  cliDefaults: Record<string, unknown>
+  cliDefaults: CliRawOptions
 ): T {
   if (!config) return opts;
 
-  const merged = { ...opts };
+  const merged = { ...opts } as T;
+  const optValues = opts as Record<string, unknown>;
   const configMapping: Record<string, keyof ConfigFile> = {
     period: 'period',
     output: 'output',
@@ -58,7 +59,7 @@ export function mergeConfigWithOpts<T extends Record<string, unknown>>(
 
   for (const [optKey, configKey] of Object.entries(configMapping)) {
     const configValue = config[configKey];
-    if (configValue !== undefined && opts[optKey] === cliDefaults[optKey]) {
+    if (configValue !== undefined && optValues[optKey] === cliDefaults[optKey as keyof CliRawOptions]) {
       (merged as Record<string, unknown>)[optKey] = configValue;
     }
   }

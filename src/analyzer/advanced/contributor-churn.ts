@@ -1,4 +1,4 @@
-import type { CommitRecord, ContributorChurnMetrics } from '../../types/index.js';
+import type { CommitRecord, ContributorChurnMetrics, AuthorDetail } from '../../types/index.js';
 
 /**
  * 计算贡献者流失率指标

@@ -23,6 +23,8 @@ export async function generateJsonReport(
       : null,
     repos: options.repoNames,
     compare: options.compare,
+    baseline: options.baseline,
+    insights: options.insights,
   };
 
   const json = JSON.stringify(reportData, null, 2);
