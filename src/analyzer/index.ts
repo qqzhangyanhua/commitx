@@ -4,6 +4,7 @@ import { parseGitLog } from './git-log-parser.js';
 import { calculateStats, mergeStats } from './stats-calculator.js';
 import { calculateAdvancedStats } from './advanced/index.js';
 import { calculateTechDebt } from './tech-debt/index.js';
+import { calculateToolRetentionAdoption } from './ai-retention-adoption.js';
 import type { AnalyzeOptions, CommitStats } from '../types/index.js';
 
 /**
@@ -35,9 +36,15 @@ export async function analyzeRepos(options: AnalyzeOptions): Promise<CommitStats
 
       // 计算技术债（仅单仓库场景）
       let techDebt;
+      let toolRetentionAdoption;
       if (repos.length === 1) {
         spinner.text = `分析技术债 - ${repo.name}`;
         techDebt = await calculateTechDebt(commits, repo.path);
+        spinner.text = `分析 AI 工具保留率/采纳率 - ${repo.name}`;
+        toolRetentionAdoption = await calculateToolRetentionAdoption(
+          commits,
+          repo.path
+        );
       }
 
       // 合并核心统计和高级统计
@@ -45,6 +52,7 @@ export async function analyzeRepos(options: AnalyzeOptions): Promise<CommitStats
         ...stats,
         ...advancedStats,
         ...(techDebt && { techDebt }),
+        ...(toolRetentionAdoption && { toolRetentionAdoption }),
       };
 
       allStats.push(fullStats);

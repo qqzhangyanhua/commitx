@@ -190,6 +190,11 @@ export interface CommitStats {
   authorAIStats?: AuthorAIStats[];
   directoryAIStats?: DirectoryAIStats[];
   aiTrends?: AITrendPoint[];
+  toolAIMetrics?: ToolAIMetrics[];
+  toolAITrends?: ToolAITrendPoint[];
+  authorToolAIStats?: AuthorToolAIStats[];
+  directoryToolAIStats?: DirectoryToolAIStats[];
+  toolRetentionAdoption?: ToolRetentionAdoption[];
 }
 
 /** 仓库信息 */
@@ -401,6 +406,71 @@ export interface AITrendPoint {
   aiLines: number;
   totalLines: number;
   aiPercentage: number;
+}
+
+// ============================================================
+// AI 工具使用统计类型 (Phase 1)
+// ============================================================
+
+/** AI 工具 ID */
+export type AIToolId =
+  | 'claude-code'
+  | 'codex'
+  | 'opencode'
+  | 'gemini'
+  | 'cursor'
+  | 'copilot'
+  | 'codeium'
+  | 'tabnine'
+  | 'other';
+
+/** 按工具维度的 AI 指标 */
+export interface ToolAIMetrics {
+  toolId: AIToolId;
+  totalLines: number;
+  aiLines: number;
+  commits: number;
+  aiPercentage: number;
+}
+
+/** 按工具维度的趋势数据点 */
+export interface ToolAITrendPoint {
+  week: string;
+  toolId: AIToolId;
+  aiLines: number;
+  totalLines: number;
+  aiPercentage: number;
+}
+
+// ============================================================
+// AI 工具使用统计类型 (Phase 2)
+// ============================================================
+
+/** 作者 × 工具 AI 统计 */
+export interface AuthorToolAIStats {
+  author: string;
+  email: string;
+  toolId: AIToolId;
+  aiLines: number;
+  totalLines: number;
+  aiPercentage: number;
+}
+
+/** 目录 × 工具 AI 统计 */
+export interface DirectoryToolAIStats {
+  path: string;
+  toolId: AIToolId;
+  aiLines: number;
+  totalLines: number;
+  commits: number;
+  aiPercentage: number;
+}
+
+/** 工具保留率与采纳率 */
+export interface ToolRetentionAdoption {
+  toolId: AIToolId;
+  retentionRate: number;
+  adoptionRate: number;
 }
 
 // ============================================================
