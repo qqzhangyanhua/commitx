@@ -195,6 +195,32 @@ export interface CommitStats {
   authorToolAIStats?: AuthorToolAIStats[];
   directoryToolAIStats?: DirectoryToolAIStats[];
   toolRetentionAdoption?: ToolRetentionAdoption[];
+
+  // 分支分析（可选）
+  branchStats?: BranchStats;
+}
+
+/** 分支统计 */
+export interface BranchStats {
+  activeBranches: number;
+  staleBranches: StaleBranch[];
+  avgBranchLifespanDays: number;
+  mergeFrequency: MergeFrequencyPoint[];
+  totalMerges: number;
+}
+
+/** 长期未合并分支 */
+export interface StaleBranch {
+  name: string;
+  lastCommitDate: string;
+  daysSinceLastCommit: number;
+  author: string;
+}
+
+/** 合并频率趋势点 */
+export interface MergeFrequencyPoint {
+  week: string;
+  merges: number;
 }
 
 /** 仓库信息 */
@@ -203,6 +229,9 @@ export interface RepoInfo {
   name: string;
   commitCount: number;
 }
+
+/** 输出格式 */
+export type ReportFormat = 'html' | 'json' | 'markdown';
 
 /** CLI 参数类型 */
 export interface CliOptions {
@@ -213,6 +242,12 @@ export interface CliOptions {
   output: string;
   open: boolean;
   depth: number;
+  format: ReportFormat;
+  quiet: boolean;
+  compare?: string;
+  template?: string;
+  config?: string;
+  alias?: string;
 }
 
 /** 时间范围 */
@@ -232,6 +267,26 @@ export interface AnalyzeOptions {
   repos: RepoInfo[];
   timeRange: TimeRange | null;
   author?: string;
+  quiet?: boolean;
+}
+
+/** 作者别名配置 */
+export interface AuthorAlias {
+  canonical: string;
+  email: string;
+  aliases: Array<{ name?: string; email?: string }>;
+}
+
+/** 配置文件格式 */
+export interface ConfigFile {
+  period?: string;
+  output?: string;
+  format?: ReportFormat;
+  depth?: number;
+  quiet?: boolean;
+  template?: string;
+  authorAliases?: AuthorAlias[];
+  exclude?: string[];
 }
 
 /** 报告配置 */
@@ -240,6 +295,30 @@ export interface ReportOptions {
   autoOpen: boolean;
   timeRange: TimeRange | null;
   repoNames: string[];
+  format: ReportFormat;
+  quiet: boolean;
+  templatePath?: string;
+  compare?: CompareResult;
+}
+
+/** 对比结果中的 delta 维度 */
+export interface DeltaValue {
+  value: number;
+  percentage: number;
+}
+
+/** 对比分析结果 */
+export interface CompareResult {
+  currentPeriod: { from: string; to: string };
+  previousPeriod: { from: string; to: string };
+  delta: {
+    commits: DeltaValue;
+    linesAdded: DeltaValue;
+    linesDeleted: DeltaValue;
+    activeAuthors: DeltaValue;
+    filesChanged: DeltaValue;
+  };
+  highlights: string[];
 }
 
 /** 传递给 HTML 模板的完整数据 */
@@ -251,6 +330,7 @@ export interface ReportData {
     to: string;
   } | null;
   repos: string[];
+  compare?: CompareResult;
 }
 
 // ============================================================
