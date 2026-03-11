@@ -4,6 +4,7 @@ dist/
 
 # 生成的报告文件
 commitx-report*.html
+commit-report.html
 
 # 系统文件
 .DS_Store
