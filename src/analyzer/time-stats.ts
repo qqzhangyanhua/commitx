@@ -6,21 +6,7 @@ import type {
   CumulativePoint,
 } from '../types/index.js';
 import { formatDateKey } from './basic-stats.js';
-
-/**
- * 获取 ISO 周标识 (YYYY-Www 格式)
- * ISO 8601: 周一到周日为一周，周四所在的周决定该周属于哪一年
- */
-export function getISOWeekKey(date: Date): string {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-  const yearStart = new Date(d.getFullYear(), 0, 1);
-  const weekNo = Math.ceil(
-    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
-  );
-  return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-}
+import { getISOWeekKey } from '../utils/date-utils.js';
 
 export function emptyTimePatterns(): TimePatterns {
   return {

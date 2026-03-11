@@ -6,6 +6,7 @@ import type {
   SnapshotMetricKey,
   TimeRange,
 } from '../types/index.js';
+import { getISOWeekKey, getMonthKey } from '../utils/date-utils.js';
 
 const METRIC_KEYS: SnapshotMetricKey[] = [
   'totalCommits',
@@ -74,7 +75,7 @@ export function calculateBaselineSummary(
     weekly: buildWindowBaselines(
       current,
       ordered,
-      getIsoWeekKey,
+      getISOWeekKey,
       4
     ),
     monthly: buildWindowBaselines(
@@ -193,19 +194,6 @@ function buildMetricBaseline(
     changePercentage: roundNumber(changePercentage),
     trend,
   };
-}
-
-function getIsoWeekKey(date: Date): string {
-  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const day = target.getUTCDay() || 7;
-  target.setUTCDate(target.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${target.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-}
-
-function getMonthKey(date: Date): string {
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 function roundNumber(value: number): number {
