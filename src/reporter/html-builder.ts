@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { serializeStats } from './serialize.js';
 import type { CommitStats, ReportOptions, ReportData } from '../types/index.js';
 
 /**
@@ -10,7 +11,7 @@ export async function buildHtml(
   stats: CommitStats,
   options: ReportOptions
 ): Promise<string> {
-  const template = await loadTemplate();
+  const template = await loadTemplate(options.templatePath);
 
   const reportData: ReportData = {
     stats: serializeStats(stats),
@@ -22,57 +23,41 @@ export async function buildHtml(
         }
       : null,
     repos: options.repoNames,
+    compare: options.compare,
   };
 
-  // 安全地序列化数据（防止 XSS）
   const jsonData = JSON.stringify(reportData)
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026');
 
-  return template.replace('__REPORT_DATA__', jsonData);
+  const title = options.repoNames.length > 0
+    ? `${options.repoNames.join(', ')} - Git 提交统计`
+    : 'Git 提交统计报告';
+
+  return template
+    .replace('__REPORT_DATA__', jsonData)
+    .replace(/__REPORT_TITLE__/g, title)
+    .replace(/__GENERATED_AT__/g, reportData.generatedAt)
+    .replace(/__REPO_NAMES__/g, options.repoNames.join(', '))
+    .replace(/__TIME_RANGE__/g, reportData.timeRange
+      ? `${reportData.timeRange.from} ~ ${reportData.timeRange.to}`
+      : '所有提交');
 }
 
 /**
- * 将 CommitStats 转为可 JSON 序列化的格式
- * Date 对象转为 ISO 字符串
+ * 加载 HTML 模板，优先使用用户自定义模板路径
  */
-function serializeStats(stats: CommitStats): Record<string, unknown> {
-  const serializeAuthorDetail = (author: { lastCommitDate: Date; [key: string]: unknown }) => ({
-    ...author,
-    lastCommitDate: author.lastCommitDate.toISOString(),
-  });
+export async function loadTemplate(customPath?: string): Promise<string> {
+  if (customPath) {
+    try {
+      return await readFile(resolve(process.cwd(), customPath), 'utf-8');
+    } catch {
+      throw new Error(`无法加载自定义模板: ${customPath}`);
+    }
+  }
 
-  return {
-    ...stats,
-    firstCommitDate: stats.firstCommitDate.toISOString(),
-    lastCommitDate: stats.lastCommitDate.toISOString(),
-    authors: stats.authors.map((a) => ({
-      ...a,
-      lastActiveDate: a.lastActiveDate.toISOString(),
-    })),
-    contributorChurn: stats.contributorChurn
-      ? {
-          ...stats.contributorChurn,
-          active: stats.contributorChurn.active.map(serializeAuthorDetail),
-          occasional: stats.contributorChurn.occasional.map(serializeAuthorDetail),
-          dormant: stats.contributorChurn.dormant.map(serializeAuthorDetail),
-          lost: stats.contributorChurn.lost.map(serializeAuthorDetail),
-          newJoiners: stats.contributorChurn.newJoiners.map(serializeAuthorDetail),
-        }
-      : undefined,
-  };
-}
-
-/**
- * 加载 HTML 模板
- */
-async function loadTemplate(): Promise<string> {
-  // 支持两种路径：开发模式和打包后模式
   const currentDir = dirname(fileURLToPath(import.meta.url));
-
-  // 打包后: dist/index.js -> ../templates/report.html
-  // 开发模式: src/reporter/html-builder.ts -> ../../templates/report.html
   const possiblePaths = [
     resolve(currentDir, '../templates/report.html'),
     resolve(currentDir, '../../templates/report.html'),
