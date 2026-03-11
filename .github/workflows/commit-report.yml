@@ -1,0 +1,38 @@
+name: Commit Report
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # 每周一凌晨 2 点
+  workflow_dispatch:
+    inputs:
+      period:
+        description: 'Analysis period'
+        default: '7d'
+        type: choice
+        options: ['7d', '1m', '3m', '6m', '1y']
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/commit-report
+        id: report
+        with:
+          period: ${{ github.event.inputs.period || '7d' }}
+          format: json
+          output: commit-report.json
+          compare: previous
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-report
+          path: commit-report.json
