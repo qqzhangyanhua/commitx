@@ -103,6 +103,14 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in-up {
+        animation: none;
+      }
+      .group:hover {
+        transform: none !important;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-200 min-h-screen transition-colors duration-300">
@@ -162,6 +170,37 @@
         </div>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="compare-deltas"></div>
         <div class="mt-3" id="compare-highlights"></div>
+      </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="mb-4 hidden" id="insights-panel">
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">异常摘要</h3>
+          <span class="text-xs text-slate-500 dark:text-slate-400">优先展示最重要的 5 条</span>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3" id="insights-list"></div>
+      </div>
+    </div>
+
+    <!-- Baseline -->
+    <div class="mb-4 hidden" id="baseline-panel">
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">趋势基线</h3>
+          <span class="text-xs text-slate-500 dark:text-slate-400">按周 / 月历史快照汇总</span>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+            <div class="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">周基线</div>
+            <div id="baseline-weekly"></div>
+          </div>
+          <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+            <div class="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">月基线</div>
+            <div id="baseline-monthly"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -685,6 +724,8 @@
   function renderAll() {
     renderSummary();
     renderCompare();
+    renderInsights();
+    renderBaseline();
     renderQualityCards();
     renderAICard();
     renderHeatmap();
@@ -774,6 +815,168 @@
   // ============================================================
   // 质量卡片
   // ============================================================
+  function renderInsights() {
+    if (!DATA.insights || DATA.insights.length === 0) return;
+
+    const panel = document.getElementById('insights-panel');
+    const container = document.getElementById('insights-list');
+    panel.classList.remove('hidden');
+
+    const severityConfigs = {
+      critical: {
+        styles: 'bg-rose-50/50 border-rose-200 text-rose-900 dark:bg-rose-900/10 dark:border-rose-800/50 dark:text-rose-200',
+        badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+        icon: `<svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`
+      },
+      warning: {
+        styles: 'bg-amber-50/50 border-amber-200 text-amber-900 dark:bg-amber-900/10 dark:border-amber-800/50 dark:text-amber-200',
+        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        icon: `<svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`
+      },
+      info: {
+        styles: 'bg-sky-50/50 border-sky-200 text-sky-900 dark:bg-sky-900/10 dark:border-sky-800/50 dark:text-sky-200',
+        badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+        icon: `<svg class="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+      },
+    };
+
+    container.innerHTML = DATA.insights.map((item, index) => {
+      const config = severityConfigs[item.severity] || severityConfigs.info;
+      return `
+      <div class="group rounded-xl border p-5 transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${config.styles} fade-in-up" style="animation-delay: ${index * 100}ms" role="article" aria-label="${formatSeverityLabel(item.severity)}: ${escapeHtml(item.title)}">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-white/50 dark:bg-slate-800/50 shadow-sm group-hover:scale-110 transition-transform duration-300" aria-hidden="true">${config.icon}</div>
+            <div class="font-bold text-base tracking-tight">${escapeHtml(item.title)}</div>
+          </div>
+          <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${config.badge} border border-current/10">${formatSeverityLabel(item.severity)}</span>
+        </div>
+        <div class="space-y-3">
+          <div class="text-sm leading-relaxed opacity-90 font-medium">${escapeHtml(item.evidence)}</div>
+          <div class="flex flex-col gap-2 pt-3 border-t border-current/10">
+            <div class="flex items-start gap-2 text-xs text-current/70"><span class="font-bold shrink-0">影响:</span> <span>${escapeHtml(item.impact)}</span></div>
+            <div class="flex items-start gap-2 text-xs text-current/80"><span class="font-bold shrink-0">建议:</span> <span class="font-semibold">${escapeHtml(item.suggestion)}</span></div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderBaseline() {
+    if (!DATA.baseline || (
+      (!DATA.baseline.weekly || DATA.baseline.weekly.length === 0) &&
+      (!DATA.baseline.monthly || DATA.baseline.monthly.length === 0)
+    )) {
+      return;
+    }
+
+    const panel = document.getElementById('baseline-panel');
+    panel.classList.remove('hidden');
+
+    renderBaselineGroup('baseline-weekly', DATA.baseline.weekly || []);
+    renderBaselineGroup('baseline-monthly', DATA.baseline.monthly || []);
+  }
+
+  function renderBaselineGroup(containerId, items) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+      container.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400">历史样本不足，暂不生成趋势判断</p>';
+      return;
+    }
+
+    container.innerHTML = items.map((item) => {
+      const isUp = item.trend === 'up';
+      const isDown = item.trend === 'down';
+      const trendColor = getTrendColor(item.trend);
+      const absChange = Math.abs(item.changePercentage || 0);
+      const barWidth = item.trend === 'flat' ? 2 : Math.max(2, Math.min(absChange * 2, 100));
+      const barBg = isUp ? 'bg-emerald-500' : isDown ? 'bg-rose-500' : 'bg-slate-400';
+
+      const trendIcon = isUp
+        ? `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-9 9-4-4-6 6"></path></svg>`
+        : isDown
+          ? `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0v-8m0 8l-9-9-4 4-6-6"></path></svg>`
+          : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14"></path></svg>`;
+
+      const changeText = item.changePercentage === undefined
+        ? '样本不足'
+        : `${item.changePercentage >= 0 ? '+' : ''}${item.changePercentage.toFixed(1)}%`;
+
+      const trendLabel = item.trend === 'up' ? '上升' : item.trend === 'down' ? '下降' : item.trend === 'flat' ? '持平' : '样本不足';
+
+      return `
+        <div class="group flex flex-col gap-2.5 py-4 border-b border-slate-100 dark:border-slate-800/60 last:border-b-0 transition-all hover:bg-slate-50/50 dark:hover:bg-slate-800/30 px-2 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${formatMetricLabel(item.metric)}</span>
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">AVG: ${formatOptionalMetricValue(item.average, item.metric)}</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs font-black ${trendColor}" aria-label="趋势: ${trendLabel}">
+              ${trendIcon} <span>${changeText}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap w-20">PREV: <span class="font-bold">${formatOptionalMetricValue(item.previous, item.metric)}</span></div>
+            <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex items-center" role="progressbar" aria-label="${formatMetricLabel(item.metric)} 变化" aria-valuenow="${absChange}" aria-valuemin="0" aria-valuemax="100">
+              <div class="h-full ${barBg} rounded-full transition-all duration-1000 ease-out" style="width: ${barWidth}%"></div>
+            </div>
+            <div class="text-[10px] text-slate-700 dark:text-slate-200 whitespace-nowrap w-20 text-right">NOW: <span class="font-bold">${formatMetricValue(item.current, item.metric)}</span></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function formatMetricLabel(metric) {
+    const labels = {
+      totalCommits: '提交数',
+      linesAdded: '新增行数',
+      linesDeleted: '删除行数',
+      activeAuthors: '活跃作者',
+      filesChanged: '变更文件数',
+      aiPercentage: 'AI 占比',
+      busFactor: 'Bus Factor',
+      stabilityScore: '稳定性评分',
+      pressureScore: '压力指数',
+      highRiskFiles: '高风险文件',
+      staleBranches: '陈旧分支',
+    };
+
+    return labels[metric] || metric;
+  }
+
+  function formatMetricValue(value, metric) {
+    if (value === undefined || value === null) return '-';
+    return metric === 'aiPercentage'
+      ? `${Number(value).toFixed(1)}%`
+      : formatNumber(Number(value));
+  }
+
+  function formatOptionalMetricValue(value, metric) {
+    if (value === undefined || value === null) return '-';
+    return formatMetricValue(value, metric);
+  }
+
+  function formatTrendLabel(trend) {
+    if (trend === 'up') return '上升';
+    if (trend === 'down') return '下降';
+    if (trend === 'flat') return '持平';
+    return '样本不足';
+  }
+
+  function getTrendColor(trend) {
+    if (trend === 'up') return 'text-emerald-600 dark:text-emerald-400';
+    if (trend === 'down') return 'text-rose-600 dark:text-rose-400';
+    return 'text-slate-500 dark:text-slate-400';
+  }
+
+  function formatSeverityLabel(severity) {
+    if (severity === 'critical') return '高优先级';
+    if (severity === 'warning') return '中优先级';
+    return '持续观察';
+  }
+
   function renderQualityCards() {
     if (!stats.quality) return;
     document.getElementById('card-avg-files').textContent = stats.quality.avgFilesPerCommit.toFixed(1);
