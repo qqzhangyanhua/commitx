@@ -198,6 +198,9 @@ export interface CommitStats {
 
   // 分支分析（可选）
   branchStats?: BranchStats;
+
+  // 代码生命周期分析（可选）
+  codeLifecycle?: CodeLifecycleMetrics;
 }
 
 /** 分支统计 */
@@ -741,4 +744,111 @@ export interface ActionItem {
   priority: number;
   suggestedAction: string;
   owner: string;
+}
+
+// ============================================================
+// 代码生命周期分析类型
+// ============================================================
+
+/** 代码生命周期统计 */
+export interface CodeLifecycleMetrics {
+  codeAge: CodeAgeStats;
+  fileLifecycle: FileLifecycleStats;
+  deletionRate: DeletionRateStats;
+}
+
+/** 代码年龄统计 */
+export interface CodeAgeStats {
+  ageDistribution: AgeDistributionBucket[];
+  oldestFiles: OldCodeFile[];
+  frequentRewriteAreas: FrequentRewriteArea[];
+  totalLinesAnalyzed: number;
+  filesAnalyzed: number;
+}
+
+export interface AgeDistributionBucket {
+  range: string;
+  rangeDays: number;
+  lines: number;
+  percentage: number;
+  files: number;
+}
+
+export interface OldCodeFile {
+  path: string;
+  avgAgeDays: number;
+  oldestLineDays: number;
+  totalLines: number;
+  lastModified: Date;
+}
+
+export interface FrequentRewriteArea {
+  path: string;
+  avgAgeDays: number;
+  totalLines: number;
+  estimatedRewrites: number;
+}
+
+/** 文件生命周期统计 */
+export interface FileLifecycleStats {
+  shortLivedFiles: ShortLivedFile[];
+  zombieFiles: ZombieFile[];
+  activeFiles: ActiveFile[];
+  totalFilesCreated: number;
+  totalFilesDeleted: number;
+}
+
+export interface ShortLivedFile {
+  path: string;
+  createdDate: Date;
+  deletedDate: Date;
+  lifespanDays: number;
+  createdBy: string;
+}
+
+export interface ZombieFile {
+  path: string;
+  createdDate: Date;
+  lastModifiedDate: Date;
+  daysSinceLastModified: number;
+  lastAuthor: string;
+}
+
+export interface ActiveFile {
+  path: string;
+  createdDate: Date;
+  lastModifiedDate: Date;
+  modifyCount: number;
+  lifespanDays: number;
+}
+
+/** 删除率统计 */
+export interface DeletionRateStats {
+  overallDeletionRate: number;
+  deletionByPeriod: DeletionPeriod[];
+  highDeletionFiles: HighDeletionFile[];
+  deletionTrend: DeletionTrendPoint[];
+}
+
+export interface DeletionPeriod {
+  period: string;
+  periodDays: number;
+  deletedLines: number;
+  totalLines: number;
+  rate: number;
+}
+
+export interface HighDeletionFile {
+  path: string;
+  addedLines: number;
+  deletedLines: number;
+  deletionRate: number;
+  lastModified: Date;
+}
+
+export interface DeletionTrendPoint {
+  week: string;
+  deletionRate: number;
+  addedLines: number;
+  deletedLines: number;
 }
