@@ -17,6 +17,8 @@ import {
   emptyMessageStats,
 } from './quality-stats.js';
 import { calculateAIMetrics } from './ai-stats-calculator.js';
+import { calculateCommitBehavior } from './commit-behavior.js';
+import { mergeCommitBehavior } from './merge-behavior.js';
 import { mergeBasicStats, calculateBusiestDay } from './merge-basic.js';
 import { mergeAuthors, sortAuthors } from './merge-author.js';
 import { mergeFileTypes, mergeDirectories, sortFileTypesAndDirectories } from './merge-file-dir.js';
@@ -83,6 +85,7 @@ export function calculateStats(commits: CommitRecord[]): CommitStats {
     toolAITrends: aiStats.toolAITrends,
     authorToolAIStats: aiStats.authorToolAIStats,
     directoryToolAIStats: aiStats.directoryToolAIStats,
+    commitBehavior: calculateCommitBehavior(commits),
   };
 }
 
@@ -163,6 +166,10 @@ export function mergeStats(statsList: CommitStats[]): CommitStats {
   normalizeMessageStats(merged, repoCount);
   mergeAuthorFileTypeContributions(merged, statsList);
   normalizeAIStats(merged);
+
+  merged.commitBehavior = mergeCommitBehavior(
+    statsList.map((s) => s.commitBehavior)
+  );
 
   return merged;
 }

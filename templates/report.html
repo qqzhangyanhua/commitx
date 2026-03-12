@@ -413,6 +413,53 @@
       </div>
     </div>
 
+    <!-- 提交行为分析区域 -->
+    <section id="commit-behavior" class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg text-primary-600 dark:text-primary-400">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold">🎯 提交行为分析</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">分析提交粒度、修复模式和开发节奏</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 图表 1：提交粒度分布 -->
+        <div class="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-4">
+          <h3 class="text-base font-semibold mb-2">提交粒度分布</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">按变更行数分类</p>
+          <div id="commit-size-chart"></div>
+          <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            💡 建议：huge 提交（500+ 行）应拆分为多个小提交
+          </div>
+        </div>
+
+        <!-- 图表 2：Fixup 链分析 -->
+        <div class="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-4">
+          <h3 class="text-base font-semibold mb-2">Fixup 链分析</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">修复类提交的时间分布</p>
+          <div id="fixup-analysis-chart"></div>
+          <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            💡 建议：修复率 > 15% 可能表示提交过于仓促
+          </div>
+        </div>
+
+        <!-- 图表 3：提交节奏 -->
+        <div class="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-4">
+          <h3 class="text-base font-semibold mb-2">提交节奏</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">连续提交间隔分布</p>
+          <div id="commit-rhythm-chart"></div>
+          <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            💡 建议：保持稳定的提交节奏，避免过度集中
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 高级分析区域 -->
     <section id="advanced-analytics" class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
       <div class="flex items-center gap-3 mb-6">
@@ -743,6 +790,9 @@
     renderSoloFilesTable();
     renderAuthorFileTypeTable();
     renderExtraStats();
+
+    // 渲染提交行为分析
+    renderCommitBehavior();
 
     // 渲染高级分析模块
     renderTeamHealth();
@@ -2133,6 +2183,220 @@
       renderAuthorFileTypeTable();
     });
   });
+
+  // ============================================================
+  // 提交行为分析
+  // ============================================================
+  function renderCommitBehavior() {
+    const behavior = stats.commitBehavior;
+    if (!behavior) {
+      document.getElementById('commit-behavior').style.display = 'none';
+      return;
+    }
+
+    renderCommitSizeChart(behavior.sizeDistribution);
+    renderFixupAnalysisChart(behavior.fixupAnalysis);
+    renderCommitRhythmChart(behavior.rhythm);
+  }
+
+  // 提交粒度分布图
+  function renderCommitSizeChart(data) {
+    const container = document.getElementById('commit-size-chart');
+    if (!container || !data) return;
+
+    const width = 280;
+    const height = 220;
+    const margin = { top: 20, right: 20, bottom: 60, left: 50 };
+
+    const svg = d3.select(container)
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const x = d3.scaleBand()
+      .domain(data.buckets.map(d => d.label))
+      .range([margin.left, width - margin.right])
+      .padding(0.2);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(data.buckets, d => d.count) || 1])
+      .nice()
+      .range([height - margin.bottom, margin.top]);
+
+    const colors = ['#10b981', '#84cc16', '#f59e0b', '#ef4444', '#dc2626'];
+
+    svg.selectAll('rect')
+      .data(data.buckets)
+      .join('rect')
+      .attr('x', d => x(d.label))
+      .attr('y', d => y(d.count))
+      .attr('width', x.bandwidth())
+      .attr('height', d => y(0) - y(d.count))
+      .attr('fill', (d, i) => colors[i])
+      .attr('rx', 4)
+      .on('mouseover', function(event, d) {
+        showTooltip(event, `${d.label}<br/>提交数: ${d.count}<br/>占比: ${(d.percentage * 100).toFixed(1)}%`);
+        d3.select(this).attr('opacity', 0.8);
+      })
+      .on('mouseout', function() {
+        hideTooltip();
+        d3.select(this).attr('opacity', 1);
+      });
+
+    svg.append('g')
+      .attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x))
+      .selectAll('text')
+      .attr('transform', 'rotate(-45)')
+      .style('text-anchor', 'end')
+      .style('font-size', '10px');
+
+    svg.append('g')
+      .attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).ticks(5))
+      .style('font-size', '10px');
+  }
+
+  // Fixup 链分析图
+  function renderFixupAnalysisChart(data) {
+    const container = document.getElementById('fixup-analysis-chart');
+    if (!container || !data) return;
+
+    const statsHtml = `
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <div class="bg-white dark:bg-slate-800 rounded-lg p-2 text-center border border-slate-200 dark:border-slate-600">
+          <div class="text-lg font-bold text-rose-500">${(data.fixRate * 100).toFixed(1)}%</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">修复率</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-lg p-2 text-center border border-slate-200 dark:border-slate-600">
+          <div class="text-lg font-bold text-amber-500">${data.avgTimeDiffHours.toFixed(1)}h</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">平均时间差</div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-lg p-2 text-center border border-slate-200 dark:border-slate-600">
+          <div class="text-lg font-bold text-blue-500">${data.totalFixes}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">修复次数</div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = statsHtml;
+
+    const width = 280;
+    const height = 140;
+    const margin = { top: 10, right: 20, bottom: 40, left: 50 };
+
+    const chartDiv = document.createElement('div');
+    container.appendChild(chartDiv);
+
+    const svg = d3.select(chartDiv)
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const dist = data.distribution;
+    const distData = [
+      { label: '< 1h', count: dist.minutes },
+      { label: '1-24h', count: dist.hours },
+      { label: '1-7d', count: dist.days },
+      { label: '7d+', count: dist.weeks }
+    ];
+
+    const x = d3.scaleBand()
+      .domain(distData.map(d => d.label))
+      .range([margin.left, width - margin.right])
+      .padding(0.3);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(distData, d => d.count) || 1])
+      .nice()
+      .range([height - margin.bottom, margin.top]);
+
+    svg.selectAll('rect')
+      .data(distData)
+      .join('rect')
+      .attr('x', d => x(d.label))
+      .attr('y', d => y(d.count))
+      .attr('width', x.bandwidth())
+      .attr('height', d => y(0) - y(d.count))
+      .attr('fill', '#3b82f6')
+      .attr('rx', 3)
+      .on('mouseover', function(event, d) {
+        showTooltip(event, `${d.label}<br/>修复数: ${d.count}`);
+        d3.select(this).attr('opacity', 0.8);
+      })
+      .on('mouseout', function() {
+        hideTooltip();
+        d3.select(this).attr('opacity', 1);
+      });
+
+    svg.append('g')
+      .attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x))
+      .style('font-size', '10px');
+
+    svg.append('g')
+      .attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).ticks(4))
+      .style('font-size', '10px');
+  }
+
+  // 提交节奏图
+  function renderCommitRhythmChart(data) {
+    const container = document.getElementById('commit-rhythm-chart');
+    if (!container || !data) return;
+
+    const width = 280;
+    const height = 220;
+    const margin = { top: 20, right: 20, bottom: 60, left: 50 };
+
+    const svg = d3.select(container)
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const x = d3.scaleBand()
+      .domain(data.buckets.map(d => d.label))
+      .range([margin.left, width - margin.right])
+      .padding(0.2);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(data.buckets, d => d.count) || 1])
+      .nice()
+      .range([height - margin.bottom, margin.top]);
+
+    const colors = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
+
+    svg.selectAll('rect')
+      .data(data.buckets)
+      .join('rect')
+      .attr('x', d => x(d.label))
+      .attr('y', d => y(d.count))
+      .attr('width', x.bandwidth())
+      .attr('height', d => y(0) - y(d.count))
+      .attr('fill', (d, i) => colors[i])
+      .attr('rx', 4)
+      .on('mouseover', function(event, d) {
+        showTooltip(event, `${d.label}<br/>提交数: ${d.count}<br/>占比: ${(d.percentage * 100).toFixed(1)}%`);
+        d3.select(this).attr('opacity', 0.8);
+      })
+      .on('mouseout', function() {
+        hideTooltip();
+        d3.select(this).attr('opacity', 1);
+      });
+
+    svg.append('g')
+      .attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x))
+      .selectAll('text')
+      .attr('transform', 'rotate(-45)')
+      .style('text-anchor', 'end')
+      .style('font-size', '10px');
+
+    svg.append('g')
+      .attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).ticks(5))
+      .style('font-size', '10px');
+  }
 
   // ============================================================
   // 高级分析 - 团队健康度

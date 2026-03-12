@@ -201,6 +201,9 @@ export interface CommitStats {
 
   // 代码生命周期分析（可选）
   codeLifecycle?: CodeLifecycleMetrics;
+
+  // 提交行为分析（可选）
+  commitBehavior?: CommitBehaviorMetrics;
 }
 
 /** 分支统计 */
@@ -851,4 +854,75 @@ export interface DeletionTrendPoint {
   deletionRate: number;
   addedLines: number;
   deletedLines: number;
+}
+
+// ============================================================
+// 提交行为分析类型
+// ============================================================
+
+/** 提交粒度分桶 */
+export interface CommitSizeBucket {
+  range: 'tiny' | 'small' | 'medium' | 'large' | 'huge';
+  label: string;
+  count: number;
+  percentage: number;
+  minLines: number;
+  maxLines: number;
+}
+
+/** 提交粒度分布 */
+export interface CommitSizeDistribution {
+  buckets: CommitSizeBucket[];
+  totalCommits: number;
+  avgLinesPerCommit: number;
+  hugeCommitRate: number;
+}
+
+/** 修复类提交记录 */
+export interface FixupCommit {
+  hash: string;
+  type: 'fix' | 'hotfix' | 'revert';
+  timeDiffMinutes: number;
+  author: string;
+  date: Date;
+  message: string;
+}
+
+/** Fixup 链分析 */
+export interface FixupAnalysis {
+  totalFixes: number;
+  fixRate: number;
+  avgTimeDiffHours: number;
+  medianTimeDiffHours: number;
+  distribution: {
+    minutes: number;
+    hours: number;
+    days: number;
+    weeks: number;
+  };
+  fixupCommits: FixupCommit[];
+}
+
+/** 提交节奏分桶 */
+export interface CommitRhythmBucket {
+  range: 'minute' | 'hour' | 'day' | 'week';
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+/** 提交节奏 */
+export interface CommitRhythm {
+  buckets: CommitRhythmBucket[];
+  avgIntervalHours: number;
+  medianIntervalHours: number;
+  burstCommits: number;
+  steadyCommits: number;
+}
+
+/** 提交行为指标 */
+export interface CommitBehaviorMetrics {
+  sizeDistribution: CommitSizeDistribution;
+  fixupAnalysis: FixupAnalysis;
+  rhythm: CommitRhythm;
 }
