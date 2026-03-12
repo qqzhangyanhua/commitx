@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { parseGitLog } from './git-log-parser.js';
 import { calculateStats, mergeStats } from './stats-calculator.js';
 import { calculateAdvancedStats } from './advanced/index.js';
+import { calculateCodeLifecycle } from './code-lifecycle/index.js';
 import { calculateTechDebt } from './tech-debt/index.js';
 import { calculateToolRetentionAdoption } from './ai-retention-adoption.js';
 import { calculateBranchStats } from './branch-stats.js';
@@ -48,6 +49,7 @@ export async function analyzeRepos(
       let techDebt;
       let toolRetentionAdoption;
       let branchStats;
+      let codeLifecycle;
       if (repos.length === 1) {
         if (spinner) spinner.text = `分析技术债 - ${repo.name}`;
         techDebt = await calculateTechDebt(commits, repo.path);
@@ -62,6 +64,12 @@ export async function analyzeRepos(
         } catch {
           // branch analysis is best-effort
         }
+        if (spinner) spinner.text = `分析代码生命周期 - ${repo.name}`;
+        try {
+          codeLifecycle = await calculateCodeLifecycle(repo.path, commits);
+        } catch {
+          // lifecycle analysis is best-effort
+        }
       }
 
       const fullStats: CommitStats = {
@@ -70,6 +78,7 @@ export async function analyzeRepos(
         ...(techDebt && { techDebt }),
         ...(toolRetentionAdoption && { toolRetentionAdoption }),
         ...(branchStats && { branchStats }),
+        ...(codeLifecycle && { codeLifecycle }),
       };
 
       allStats.push(fullStats);
