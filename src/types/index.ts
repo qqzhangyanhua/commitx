@@ -521,11 +521,25 @@ export interface AuthorPair {
 // AI 使用统计类型
 // ============================================================
 
+/** AI 置信度等级 */
+export type AIConfidence = 'low' | 'medium' | 'high';
+
+/** AI 估算范围 */
+export interface AIEstimatedRange {
+  minLines: number;
+  maxLines: number;
+  minPercentage: number;
+  maxPercentage: number;
+}
+
 /** AI 统计指标 */
 export interface AIMetrics {
   totalAILines: number;
   totalLines: number;
   aiPercentage: number;
+  confidence: AIConfidence;
+  confidenceScore: number;
+  estimatedRange: AIEstimatedRange;
   suspiciousCommits: number;
   highAICommits: AICommit[];
 }
@@ -536,6 +550,7 @@ export interface AICommit {
   author: string;
   date: Date;
   aiScore: number;
+  confidence: AIConfidence;
   linesAdded: number;
   filesCount: number;
   message: string;
@@ -583,6 +598,14 @@ export type AIToolId =
   | 'copilot'
   | 'codeium'
   | 'tabnine'
+  | 'windsurf'
+  | 'v0'
+  | 'bolt'
+  | 'lovable'
+  | 'aider'
+  | 'cline'
+  | 'roo-code'
+  | 'devin'
   | 'other';
 
 /** 按工具维度的 AI 指标 */

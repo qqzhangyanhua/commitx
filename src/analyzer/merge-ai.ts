@@ -8,6 +8,12 @@ export function mergeAIMetrics(merged: CommitStats, stats: CommitStats): void {
     merged.aiMetrics.totalAILines += stats.aiMetrics.totalAILines;
     merged.aiMetrics.totalLines += stats.aiMetrics.totalLines;
     merged.aiMetrics.suspiciousCommits += stats.aiMetrics.suspiciousCommits;
+
+    if (stats.aiMetrics.estimatedRange && merged.aiMetrics.estimatedRange) {
+      merged.aiMetrics.estimatedRange.minLines += stats.aiMetrics.estimatedRange.minLines;
+      merged.aiMetrics.estimatedRange.maxLines += stats.aiMetrics.estimatedRange.maxLines;
+    }
+
     for (const c of stats.aiMetrics.highAICommits) {
       merged.aiMetrics.highAICommits.push({ ...c });
     }
@@ -173,6 +179,18 @@ export function normalizeAIStats(merged: CommitStats): void {
       merged.aiMetrics.totalLines > 0
         ? (merged.aiMetrics.totalAILines / merged.aiMetrics.totalLines) * 100
         : 0;
+
+    if (merged.aiMetrics.estimatedRange) {
+      merged.aiMetrics.estimatedRange.minPercentage =
+        merged.aiMetrics.totalLines > 0
+          ? (merged.aiMetrics.estimatedRange.minLines / merged.aiMetrics.totalLines) * 100
+          : 0;
+      merged.aiMetrics.estimatedRange.maxPercentage =
+        merged.aiMetrics.totalLines > 0
+          ? (merged.aiMetrics.estimatedRange.maxLines / merged.aiMetrics.totalLines) * 100
+          : 0;
+    }
+
     merged.aiMetrics.highAICommits = merged.aiMetrics.highAICommits
       .sort((a, b) => b.aiScore - a.aiScore)
       .slice(0, 20);
