@@ -16,3 +16,13 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Claude 本地配置和计划
+.claude/settings.local.json
+.claude/plan/
+
+# 报告输出目录
+.commit-report/
+
+# 临时文档
+AGENTS.md
