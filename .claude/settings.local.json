@@ -22,7 +22,14 @@
       "Bash(python scripts/gemini_bridge.py --cd \"D:\\\\AI\\\\commitx\" --PROMPT \"You are a frontend UI/UX expert. I need to optimize the visual design of two components in an HTML report::*)",
       "Read(//c/Users/Administrator/.claude/skills/collaborating-with-codex/**)",
       "Bash(python scripts/codex_bridge.py --cd \"D:\\\\AI\\\\commitx\" --PROMPT \"Review the recent changes to templates/report.html focusing on::*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pnpm type-check:*)",
+      "Bash(wc:*)",
+      "Bash(cd \"D:\\\\AI\\\\commitx\" && pnpm add p-limit)",
+      "Bash(cd \"D:\\\\AI\\\\commitx\" && pnpm exec tsc --noEmit)",
+      "Bash(cd \"D:\\\\AI\\\\commitx\" && mkdir -p src/analyzer/code-lifecycle)",
+      "Bash(cd \"D:\\\\AI\\\\commitx\" && rm -f src/analyzer/advanced/code-age.ts src/analyzer/advanced/file-lifecycle.ts src/analyzer/advanced/deletion-rate.ts)",
+      "Skill(ccg:commit)"
     ]
   }
 }
